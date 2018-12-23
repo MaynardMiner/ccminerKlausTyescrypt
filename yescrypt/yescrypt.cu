@@ -37,27 +37,27 @@ void yescrypt_hash(void *state, const void *input)
 
 void yescryptr8_hash(void *state, const void *input)
 {
-	yescrypt_hash_base(state, input, 2048, 8, 1, "Client Key", 10);
+	yescrypt_hash_base(state, input, 2048, 8, 1, (char *)"Client Key", 10);
 }
 
 void yescryptr16_hash(void *state, const void *input)
 {
-	yescrypt_hash_base(state, input, 4096, 16, 1, "Client Key", 10);
+	yescrypt_hash_base(state, input, 4096, 16, 1, (char *)"Client Key", 10);
 }
 
 void yescryptr16v2_hash(void *state, const void *input)
 {
-	yescrypt_hash_base(state, input, 4096, 16, 4, "PPTPPubKey", 10);
+	yescrypt_hash_base(state, input, 4096, 16, 4, (char *)"PPTPPubKey", 10);
 }
 
 void yescryptr24_hash(void *state, const void *input)
 {
-	yescrypt_hash_base(state, input, 4096, 24, 1, "Jagaricoin", 10);
+	yescrypt_hash_base(state, input, 4096, 24, 1, (char *)"Jagaricoin", 10);
 }
 
 void yescryptr32_hash(void *state, const void *input)
 {
-	yescrypt_hash_base(state, input, 4096, 32, 1, "WaviBanana", 10);
+	yescrypt_hash_base(state, input, 4096, 32, 1, (char *)"WaviBanana", 10);
 }
 
 int scanhash_yescrypt_base(int thr_id, uint32_t *pdata,
@@ -233,33 +233,33 @@ int scanhash_yescryptr8(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
 	uint32_t *hashes_done)
 {
-	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, 2048, 8, 1, "Client Key", 10);
+	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, 2048, 8, 1, (char *)"Client Key", 10);
 }
 
 int scanhash_yescryptr16(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
 	uint32_t *hashes_done)
 {
-	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, 4096, 16, 1, "Client Key", 10);
+	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, 4096, 16, 1, (char *)"Client Key", 10);
 }
 
 int scanhash_yescryptr16v2(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
 	uint32_t *hashes_done)
 {
-	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, 4096, 16, 4, "PPTPPubKey", 10);
+	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, 4096, 16, 4, (char *)"PPTPPubKey", 10);
 }
 
 int scanhash_yescryptr24(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
 	uint32_t *hashes_done)
 {
-	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, 4096, 24, 1, "Jagaricoin", 10);
+	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, 4096, 24, 1, (char *)"Jagaricoin", 10);
 }
 
 int scanhash_yescryptr32(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
 	uint32_t *hashes_done)
 {
-	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, 4096, 32, 1, "WaviBanana", 10);
+	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, 4096, 32, 1, (char *)"WaviBanana", 10);
 }
