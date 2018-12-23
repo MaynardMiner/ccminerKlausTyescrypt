@@ -1,3 +1,6 @@
+// originally from nemosminer - https://github.com/nemosminer/ccminerKlausTyescrypt
+// modified by MaynardMiner 12/23/2018 https://github.com/maynardminer/ccminerKlausTyescrypt
+
 #include "miner.h"
 #include "cuda_helper.h"
 extern "C" {
@@ -9,7 +12,7 @@ extern "C" {
 #include "SHA3api_ref.h"
 }
 
-extern void yescrypt_cpu_init(int thr_id, int threads, uint32_t *d_hash1, uint32_t *d_hash2, uint32_t *d_hash3, uint32_t *d_hash4);
+extern void yescrypt_cpu_init(int thr_id, uint32_t threads, const uint32_t N, const uint32_t r, const uint32_t p);
 extern void yescrypt_setTarget(int thr_id, uint32_t pdata[20], char *key, uint32_t key_len);
 extern void yescrypt_cpu_hash_32(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *resultnonces, uint32_t target, const uint32_t N, const uint32_t r, const uint32_t p);
 extern void yescrypt_cpu_free(int thr_id);
@@ -64,10 +67,6 @@ int scanhash_yescrypt_base(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce, uint32_t *hashes_done,
 	const uint32_t N, const uint32_t r, const uint32_t p,
 	char *key, const size_t key_len) {
-	static THREAD uint32_t *d_hash1 = nullptr;
-	static THREAD uint32_t *d_hash2 = nullptr;
-	static THREAD uint32_t *d_hash3 = nullptr;
-	static THREAD uint32_t *d_hash4 = nullptr;
 
 	const uint32_t first_nonce = pdata[19];
 
@@ -76,16 +75,20 @@ int scanhash_yescrypt_base(int thr_id, uint32_t *pdata,
 	cudaGetDeviceProperties(&props, dev_id);
 
 	uint32_t CUDAcore_count;
-	if (device_sm[dev_id] == 600)		// Pascal(P100)
-		CUDAcore_count = props.multiProcessorCount * 64;
+	if (device_sm[dev_id] >= 700)
+	CUDAcore_count = props.multiProcessorCount * 64;
+	if (device_sm[dev_id] >= 610)
+	CUDAcore_count = props.multiProcessorCount * 128;
+	if (device_sm[dev_id] >= 600)		// Pascal(P100)
+    CUDAcore_count = props.multiProcessorCount * 64;
 	else if (device_sm[dev_id] >= 500)	// Maxwell/Pascal(other)/Volta
-		CUDAcore_count = props.multiProcessorCount * 128;
+	CUDAcore_count = props.multiProcessorCount * 128;
 	else if (device_sm[dev_id] >= 300)	// Kepler
-		CUDAcore_count = props.multiProcessorCount * 96; // * 192
+	CUDAcore_count = props.multiProcessorCount * 96; // * 192
 	else if (device_sm[dev_id] >= 210)	// Fermi(GF11x)
-		CUDAcore_count = props.multiProcessorCount * 48;
+	CUDAcore_count = props.multiProcessorCount * 48;
 	else					// Fermi(GF10x)
-		CUDAcore_count = props.multiProcessorCount * 32;
+	CUDAcore_count = props.multiProcessorCount * 32;
 
 	uint32_t throughputmax;
 #if defined WIN32 && !defined _WIN64
@@ -136,16 +139,7 @@ int scanhash_yescrypt_base(int thr_id, uint32_t *pdata,
 			proper_exit(2);
 		}
 
-		size_t hash1_sz = 2 * 16 * r * p * sizeof(uint32_t);	// B
-		size_t hash2_sz = 512 * sizeof(uint32_t);				// S(4way)
-		size_t hash3_sz = 2 * N * r * sizeof(uint32_t);			// V(16way)
-		size_t hash4_sz = 8 * sizeof(uint32_t);					// sha256
-		CUDA_SAFE_CALL(cudaMalloc(&d_hash1, hash1_sz * throughputmax));
-		CUDA_SAFE_CALL(cudaMalloc(&d_hash2, hash2_sz * throughputmax));
-		CUDA_SAFE_CALL(cudaMalloc(&d_hash3, hash3_sz * throughputmax));
-		CUDA_SAFE_CALL(cudaMalloc(&d_hash4, hash4_sz * throughputmax));
-
-		yescrypt_cpu_init(thr_id, throughputmax, d_hash1, d_hash2, d_hash3, d_hash4);
+		yescrypt_cpu_init(thr_id, throughputmax, N, r, p);
 		mining_has_stopped[thr_id] = false;
 
 		init = true;

@@ -1,3 +1,6 @@
+// originally from nemosminer - https://github.com/nemosminer/ccminerKlausTyescrypt
+// modified by MaynardMiner 12/23/2018 https://github.com/maynardminer/ccminerKlausTyescrypt
+
 #include <stdio.h>
 #include <memory.h>
 #include "miner.h"
@@ -139,12 +142,10 @@ __device__ __forceinline__ void WarpShuffle4(uint32_t &d0, uint32_t &d1, uint32_
 
 #endif
 
-extern cudaError_t MyStreamSynchronize(cudaStream_t stream, int situation, int thr_id);
-
-__device__ static uint32_t *B;
-__device__ static uint32_t *S;
-__device__ static uint32_t *V;
-__device__ static uint32_t *sha256;
+__device__ uint32_t *B;
+__device__ uint32_t *S;
+__device__ uint32_t *V;
+__device__ uint32_t *sha256;
 
 static uint32_t *d_gnounce[MAX_GPUS];
 static uint32_t *d_GNonce[MAX_GPUS];
@@ -152,11 +153,11 @@ static uint32_t *d_GNonce[MAX_GPUS];
 ///////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////// sha256 function ///////////////////////////////////
 
-__constant__ static uint32_t c_data[20];
-__constant__ static uint32_t cpu_h[8];
-__constant__ static uint32_t c_K[64];
-__constant__ static uint32_t client_key[32];
-__constant__ static uint32_t client_key_len[1];
+__constant__ uint32_t c_data[20];
+__constant__ uint32_t cpu_h[8];
+__constant__ uint32_t c_K[64];
+__constant__ uint32_t client_key[32];
+__constant__ uint32_t client_key_len[1];
 
 /* Elementary functions used by SHA256 */
 #define Ch(x, y, z)     ((x & (y ^ z)) ^ z)
@@ -1138,18 +1139,41 @@ __global__ __launch_bounds__(32, 1) void yescrypt_gpu_hash_k2c2(int threads, uin
 #undef Sdev
 #undef Shared
 
-__host__
-void yescrypt_cpu_init(int thr_id, int threads, uint32_t *d_hash1, uint32_t *d_hash2, uint32_t *d_hash3, uint32_t *d_hash4)
-{
+static THREAD uint32_t *d_hash1 = NULL;
+static THREAD uint32_t *d_hash2 = NULL;
+static THREAD uint32_t *d_hash3 = NULL;
+static THREAD uint32_t *d_hash4 = NULL;
 
-	cudaMemcpyToSymbol(B, &d_hash1, sizeof(d_hash1), 0, cudaMemcpyHostToDevice);
-	cudaMemcpyToSymbol(S, &d_hash2, sizeof(d_hash2), 0, cudaMemcpyHostToDevice);
-	cudaMemcpyToSymbol(V, &d_hash3, sizeof(d_hash3), 0, cudaMemcpyHostToDevice);
-	cudaMemcpyToSymbol(sha256, &d_hash4, sizeof(d_hash4), 0, cudaMemcpyHostToDevice);
-	cudaMemcpyToSymbol(c_K, cpu_K, sizeof(cpu_K), 0, cudaMemcpyHostToDevice);
+__host__
+void yescrypt_cpu_init(int thr_id, uint32_t threads, const uint32_t N, const uint32_t r, const uint32_t p)
+{
+	size_t hash1_sz = 2 * 16 * r * p * sizeof(uint32_t);	// B
+	size_t hash2_sz = 512 * sizeof(uint32_t);				// S(4way)
+	size_t hash3_sz = 2 * N * r * sizeof(uint32_t);			// V(16way)
+	size_t hash4_sz = 8 * sizeof(uint32_t);					// sha256
+	CUDA_SAFE_CALL(cudaMalloc(&d_hash1, hash1_sz * threads));
+	CUDA_SAFE_CALL(cudaMalloc(&d_hash2, hash2_sz * threads));
+	CUDA_SAFE_CALL(cudaMalloc(&d_hash3, hash3_sz * threads));
+	CUDA_SAFE_CALL(cudaMalloc(&d_hash4, hash4_sz * threads));
+	CUDA_SAFE_CALL(cudaMemcpyToSymbol(B, &d_hash1, sizeof(uint32_t*), 0, cudaMemcpyHostToDevice));
+	CUDA_SAFE_CALL(cudaMemcpyToSymbol(S, &d_hash2, sizeof(uint32_t*), 0, cudaMemcpyHostToDevice));
+	CUDA_SAFE_CALL(cudaMemcpyToSymbol(V, &d_hash3, sizeof(uint32_t*), 0, cudaMemcpyHostToDevice));
+	CUDA_SAFE_CALL(cudaMemcpyToSymbol(sha256, &d_hash4, sizeof(uint32_t*), 0, cudaMemcpyHostToDevice));
+	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_K, cpu_K, sizeof(cpu_K), 0, cudaMemcpyHostToDevice));
 
 	CUDA_SAFE_CALL(cudaMalloc(&d_GNonce[thr_id], 2 * sizeof(uint32_t)));
 	CUDA_SAFE_CALL(cudaMallocHost(&d_gnounce[thr_id], 2 * sizeof(uint32_t)));
+}
+
+__host__ 
+void yescrypt_cpu_free(int thr_id)
+{
+	cudaFreeHost(d_gnounce[thr_id]);
+	cudaFree(d_GNonce[thr_id]);
+	cudaFree(d_hash1);
+	cudaFree(d_hash2);
+	cudaFree(d_hash3);
+	cudaFree(d_hash4);
 }
 
 __host__
@@ -1169,8 +1193,8 @@ void yescrypt_setTarget(int thr_id, uint32_t pdata[20], char *key, uint32_t key_
 	data[14] = ((uint32_t*)pdata)[14]; data[15] = ((uint32_t*)pdata)[15];
 	sha256_round_body_host(data, h, cpu_K);
 
-	cudaMemcpyToSymbol(cpu_h, h, 8 * sizeof(uint32_t), 0, cudaMemcpyHostToDevice);
-	cudaMemcpyToSymbol(c_data, pdata, 20 * sizeof(uint32_t), 0, cudaMemcpyHostToDevice);
+	CUDA_SAFE_CALL(cudaMemcpyToSymbol(cpu_h, h, 8 * sizeof(uint32_t), 0, cudaMemcpyHostToDevice));
+	CUDA_SAFE_CALL(cudaMemcpyToSymbol(c_data, pdata, 20 * sizeof(uint32_t), 0, cudaMemcpyHostToDevice));
 
 	if (key)
 	{
@@ -1229,7 +1253,7 @@ __host__ void yescrypt_cpu_hash_32(int thr_id, uint32_t threads, uint32_t startN
 	const uint32_t Nw = ((N + 2) / 3) & ~1;
 	const uint32_t Nr = ((N + 2) / 3 + 1) & ~1;
 
-	// ‰ž“š‚ª’x‚¢‚ÆError‚É‚È‚é‚Ì‚ÅAloop_count‚Å“K“x‚É•ªŠ„‚µ‚Ü‚·B
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½xï¿½ï¿½ï¿½ï¿½Errorï¿½É‚È‚ï¿½Ì‚ÅAloop_countï¿½Å“Kï¿½xï¿½É•ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü‚ï¿½ï¿½B
 	uint32_t loop_count;
 	if (device_sm[dev_id] > 500) loop_count = max(N * r / 16384, 1);
 	else if (device_sm[dev_id] == 500) loop_count = max(N * r / 8192, 1);
@@ -1240,9 +1264,9 @@ __host__ void yescrypt_cpu_hash_32(int thr_id, uint32_t threads, uint32_t startN
 	CUDA_SAFE_CALL(cudaGetLastError());
 	for (uint32_t l = 0; l < p; l++)
 	{
-		// ƒƒ‚ƒŠ‚ÌŽg—p—Ê‚ð—}‚¦‚é‚½‚ßA16•ªŠ„‚Å‰‰ŽZ‚ðs‚¢‚Ü‚·B
-		// ‚µ‚©‚µAyescrypt_gpu_hash_k1‚Å16•ªŠ„‚Í•sŒü‚«‚ÅA‚±‚Ì•”•ª‚Ìƒƒ‚ƒŠŽg—p—Ê‚à­‚È‚¢‚½‚ßA
-		// yescrypt_gpu_hash_k1‚Í4•ªŠ„‚Å‰‰ŽZ‚ðs‚¢‚Ü‚·B
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÌŽgï¿½pï¿½Ê‚ï¿½}ï¿½ï¿½ï¿½é‚½ï¿½ßA16ï¿½ï¿½ï¿½ï¿½ï¿½Å‰ï¿½ï¿½Zï¿½ï¿½sï¿½ï¿½ï¿½Ü‚ï¿½ï¿½B
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ayescrypt_gpu_hash_k1ï¿½ï¿½16ï¿½ï¿½ï¿½ï¿½ï¿½Í•sï¿½ï¿½ï¿½ï¿½ï¿½ÅAï¿½ï¿½ï¿½Ì•ï¿½ï¿½ï¿½ï¿½Ìƒï¿½ï¿½ï¿½ï¿½ï¿½ï¿½gï¿½pï¿½Ê‚ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½ßA
+		// yescrypt_gpu_hash_k1ï¿½ï¿½4ï¿½ï¿½ï¿½ï¿½ï¿½Å‰ï¿½ï¿½Zï¿½ï¿½sï¿½ï¿½ï¿½Ü‚ï¿½ï¿½B
 		for (uint32_t i = 0; i < 4; i++)
 		{
 			yescrypt_gpu_hash_k1 << <grid, block2, sm >> > (threads, startNounce, i * (threads >> 2) + l * r * 2 * threads);
@@ -1278,15 +1302,9 @@ __host__ void yescrypt_cpu_hash_32(int thr_id, uint32_t threads, uint32_t startN
 	yescrypt_gpu_hash_k5 << <grid, block >> > (threads, startNounce, d_GNonce[thr_id], target, r, p);
 	CUDA_SAFE_CALL(cudaGetLastError());
 	if (opt_debug)
-		CUDA_SAFE_CALL(cudaDeviceSynchronize());
+	CUDA_SAFE_CALL(cudaDeviceSynchronize());
 
-	CUDA_SAFE_CALL(cudaMemcpy(d_gnounce[thr_id], d_GNonce[thr_id], 2 * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+	CUDA_SAFE_CALL(cudaMemcpyAsync(d_gnounce[thr_id], d_GNonce[thr_id], 2 * sizeof(uint32_t), cudaMemcpyDeviceToHost, gpustream[thr_id])); cudaStreamSynchronize(gpustream[thr_id]);
 	resultnonces[0] = *(d_gnounce[thr_id]);
 	resultnonces[1] = *(d_gnounce[thr_id] + 1);
-}
-
-__host__ void yescrypt_cpu_free(int thr_id)
-{
-	cudaFreeHost(d_gnounce[thr_id]);
-	cudaFree(d_GNonce[thr_id]);
 }

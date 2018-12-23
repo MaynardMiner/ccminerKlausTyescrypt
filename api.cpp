@@ -379,7 +379,7 @@ static char *getmeminfo(char *params)
 	totmem = smem + hmem;
 
 	*buffer = '\0';
-	sprintf(buffer, "STATS=%u;HASHLOG=%u;MEM=%llu|",
+	sprintf(buffer, "STATS=%u;HASHLOG=%u;MEM=%lu|",
 		srec, hrec, totmem);
 
 	return buffer;

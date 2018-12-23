@@ -56,7 +56,7 @@ BOOL WINAPI ConsoleHandler(DWORD);
 #endif
 
 #define PROGRAM_NAME		"ccminer"
-#define LP_SCANTIME		10
+#define LP_SCANTIME		25
 #define MNR_BLKHDR_SZ 80
 
 double expectedblocktime(const uint32_t *target);
@@ -3609,7 +3609,7 @@ int main(int argc, char *argv[])
 	printf("Based on pooler cpuminer 2.3.2 and the tpruvot@github fork\n");
 	printf("CUDA support by Christian Buchner, Christian H. and DJM34\n");
 	printf("Includes optimizations implemented by stsminer, sp-hash, klaust, tpruvot and tsiv.\n\n");
-    printf("compiled by nemosminer@github.com\n\n");
+    printf("compiled by maynardminer@github.com\n\n");
 
 #ifdef WIN32
 	if(CUDART_VERSION == 8000 && _MSC_VER > 1900)

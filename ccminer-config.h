@@ -1,5 +1,5 @@
-/* cpuminer-config.h.  Generated from cpuminer-config.h.in by configure.  */
-/* cpuminer-config.h.in.  Generated from configure.ac by autoheader.  */
+/* ccminer-config.h.  Generated from ccminer-config.h.in by configure.  */
+/* ccminer-config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define to one of `_getb67', `GETB67', `getb67' for Cray-2 and Cray-YMP
    systems. This function is required for `alloca.c' support on those systems.
@@ -14,7 +14,7 @@
 
 /* Define to 1 if you have <alloca.h> and it should be used (not on Ultrix).
    */
-//#define HAVE_ALLOCA_H 1
+#define HAVE_ALLOCA_H 1
 
 /* Define to 1 if you have the declaration of `be32dec', and to 0 if you
    don't. */
@@ -39,7 +39,7 @@
 #define HAVE_INTTYPES_H 1
 
 /* Define to 1 if you have the `crypto' library (-lcrypto). */
-//#define HAVE_LIBCRYPTO 1
+#define HAVE_LIBCRYPTO 1
 
 /* Define to 1 if you have a functional curl library. */
 #define HAVE_LIBCURL 1
@@ -57,31 +57,31 @@
 #define HAVE_STDLIB_H 1
 
 /* Define to 1 if you have the <strings.h> header file. */
-//#define HAVE_STRINGS_H 1
+#define HAVE_STRINGS_H 1
 
 /* Define to 1 if you have the <string.h> header file. */
 #define HAVE_STRING_H 1
 
 /* Define to 1 if you have the <syslog.h> header file. */
-//#define HAVE_SYSLOG_H 1
+#define HAVE_SYSLOG_H 1
 
 /* Define to 1 if you have the <sys/endian.h> header file. */
 /* #undef HAVE_SYS_ENDIAN_H */
 
 /* Define to 1 if you have the <sys/param.h> header file. */
-//#define HAVE_SYS_PARAM_H 1
+#define HAVE_SYS_PARAM_H 1
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #define HAVE_SYS_STAT_H 1
 
 /* Define to 1 if you have the <sys/sysctl.h> header file. */
-//#define HAVE_SYS_SYSCTL_H 1
+#define HAVE_SYS_SYSCTL_H 1
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #define HAVE_SYS_TYPES_H 1
 
 /* Define to 1 if you have the <unistd.h> header file. */
-//#define HAVE_UNISTD_H 1
+#define HAVE_UNISTD_H 1
 
 /* Defined if libcurl supports AsynchDNS */
 #define LIBCURL_FEATURE_ASYNCHDNS 1
@@ -146,6 +146,9 @@
 /* Defined if libcurl supports TFTP */
 #define LIBCURL_PROTOCOL_TFTP 1
 
+/* nvml library to dlopen */
+#define NVML_LIBPATH "libnvidia-ml.so"
+
 /* Name of package */
 #define PACKAGE "ccminer"
 
@@ -156,7 +159,7 @@
 #define PACKAGE_NAME "ccminer"
 
 /* Define to the full name and version of this package. */
- #define PACKAGE_STRING "ccminer Yescrypt/R16/R32.V11"
+#define PACKAGE_STRING "ccminer 1.02-MaynardVII"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "ccminer"
@@ -165,8 +168,8 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
- #define PACKAGE_VERSION "Yescrypt/R16/R32.V11"
- 
+#define PACKAGE_VERSION "1.02-MaynardVII"
+
 /* If using the C implementation of alloca, define if you know the
    direction of stack growth for your system; otherwise it will be
    automatically deduced at runtime.
@@ -179,13 +182,13 @@
 #define STDC_HEADERS 1
 
 /* Define to 1 if AVX assembly is available. */
-#define USE_AVX 0
+#define USE_AVX 1
 
 /* Define to 1 if AVX2 assembly is available. */
-#define USE_AVX2 0
+#define USE_AVX2 1
 
 /* Define to 1 if XOP assembly is available. */
-//#define USE_XOP 1
+#define USE_XOP 1
 
 /* Version number of package */
 #define VERSION "1.02-MaynardVII"
@@ -195,5 +198,3 @@
 
 /* Define to `unsigned int' if <sys/types.h> does not define. */
 /* #undef size_t */
-
-#define NVML_LIBPATH "%PROGRAMFILES%\\NVIDIA Corporation\\NVSMI\\nvml.dll"
